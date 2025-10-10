@@ -220,6 +220,7 @@ impl Payment {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransactionRequest {
     payments: BTreeMap<usize, Payment>,
+    op_return_data: Option<Vec<u8>>,
 }
 
 impl TransactionRequest {
@@ -227,6 +228,7 @@ impl TransactionRequest {
     pub fn empty() -> Self {
         Self {
             payments: BTreeMap::new(),
+            op_return_data: None,
         }
     }
 
@@ -239,6 +241,7 @@ impl TransactionRequest {
 
         let request = TransactionRequest {
             payments: payments.into_iter().enumerate().collect(),
+            op_return_data: None,
         };
 
         // Enforce validity requirements.
@@ -247,6 +250,15 @@ impl TransactionRequest {
         }
 
         Ok(request)
+    }
+
+    pub fn with_op_return(mut self, data: Vec<u8>) -> Self {
+        self.op_return_data = Some(data);
+        self
+    }
+
+    pub fn op_return_data(&self) -> Option<&Vec<u8>> {
+        self.op_return_data.as_ref()
     }
 
     /// Constructs a new transaction request from the provided map from payment
@@ -261,7 +273,7 @@ impl TransactionRequest {
             return Err(Zip321Error::TooManyPayments(*k));
         }
 
-        Ok(TransactionRequest { payments })
+        Ok(TransactionRequest { payments, op_return_data: None })
     }
 
     /// Returns the map of payments that make up this request.
@@ -419,7 +431,7 @@ impl TransactionRequest {
             .into_iter()
             .map(|(i, params)| parse::to_payment(params, i).map(|payment| (i, payment)))
             .collect::<Result<BTreeMap<usize, Payment>, _>>()
-            .map(|payments| TransactionRequest { payments })
+            .map(|payments| TransactionRequest { payments, op_return_data: None })
     }
 }
 

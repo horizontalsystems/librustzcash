@@ -423,21 +423,14 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
                     transparent_outputs.push(TxOut::new(payment.amount(), addr.script().into()));
 
                     // Add OP_RETURN if exists
-                    if let Some((_, op_return_hex)) = payment.other_params().iter()
-                        .find(|(key, _)| key == "op_return")
-                    {
-                        info!("Found op_return in payment.other_params(), hex: {}", op_return_hex);
-                        hex::decode(op_return_hex)
-                            .ok()
-                            .and_then(OpReturnScript::new)
+                    if let Some(op_return_data) = transaction_request.op_return_data() {
+                        info!("Found op_return_data in transaction request, length: {} bytes", op_return_data.len());
+
+                        OpReturnScript::new(op_return_data.clone())
                             .map(|op_return| {
-                                info!("Created OpReturnScript successfully, adding to transparent_outputs");
                                 let script = op_return.script();
                                 transparent_outputs.push(TxOut::new(Zatoshis::ZERO, script.clone().into()));
-                                info!("Added OP_RETURN output, total transparent outputs: {}, script hex: {}",
-                                    transparent_outputs.len(),
-                                    hex::encode(&script.to_bytes())
-                                );
+                                info!("Added OP_RETURN output, script hex: {}", hex::encode(&script.to_bytes()));
                             });
                     }
                 }

@@ -60,6 +60,7 @@ use sapling::{
     note_encryption::{try_sapling_note_decryption, PreparedIncomingViewingKey},
     prover::{OutputProver, SpendProver},
 };
+use tracing::info;
 use transparent::{address::TransparentAddress, builder::TransparentSigningSet, bundle::OutPoint};
 use zcash_address::ZcashAddress;
 use zcash_keys::{
@@ -1548,35 +1549,31 @@ where
         }
     }
 
-    // Extract the first OP_RETURN data from payments
-    let op_return_data = proposal_step
+    // Get OP_RETURN data from TransactionRequest directly
+    if let Some(op_return_data) = proposal_step
         .transaction_request()
-        .payments()
-        .values()
-        .find_map(|payment| {
-            payment.other_params()
-                .iter()
-                .find(|(key, _)| key == "op_return")
-                .map(|(_, hex_value)| hex_value.clone())
-        });
+        .op_return_data()
+    {
+        info!("Adding OP_RETURN output with {} bytes of data", op_return_data.len());
 
-    // Add OP_RETURN output if data is present
-    if let Some(op_return_hex) = op_return_data {
-        // Decode hex string to bytes
-        let data = hex::decode(&op_return_hex)
-            .map_err(|_| Error::InvalidOpReturnData)?;
+        // Validate data size
+        if op_return_data.len() > 80 {
+            return Err(Error::InvalidOpReturnData);
+        }
 
-        // Add zero-value OP_RETURN output with the decoded data
-        builder.add_transparent_null_data_output(&data)?;
+        // Add zero-value OP_RETURN output
+        builder.add_transparent_null_data_output(op_return_data)?;
 
-        // Add to metadata for database tracking and transaction history
+        info!("OP_RETURN output added successfully, hex: {}", hex::encode(op_return_data));
+
+        // Add to metadata for database tracking (optional)
         transparent_output_meta.push((
             BuildRecipient::OpReturn {
-                data: data.clone(),
+                data: op_return_data.clone(),
             },
             TransparentAddress::PublicKeyHash([0u8; 20]), // Dummy address, not used for OP_RETURN
             Zatoshis::ZERO,
-            StepOutputIndex::OpReturn(0), // Or create new variant StepOutputIndex::OpReturn
+            StepOutputIndex::Payment(transparent_output_meta.len()), // Or just track index
         ));
     }
 
