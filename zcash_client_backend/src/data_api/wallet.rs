@@ -1573,8 +1573,8 @@ where
             },
             TransparentAddress::PublicKeyHash([0u8; 20]), // Dummy address, not used for OP_RETURN
             Zatoshis::ZERO,
-            StepOutputIndex::Payment(transparent_output_meta.len()), // Or just track index
-        ));
+            StepOutputIndex::OpReturn(0)), // Or just track index
+        );
     }
 
     Ok(BuildState {
