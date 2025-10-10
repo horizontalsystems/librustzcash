@@ -187,6 +187,11 @@ impl<AccountId: Copy> PcztRecipient<AccountId> {
                 PcztRecipient::InternalAccount { receiving_account },
                 external_address,
             ),
+            BuildRecipient::OpReturn { .. } => {
+                // OP_RETURN outputs don't have recipients in PCZT
+                // They should be handled separately if needed
+                (PcztRecipient::External, None)
+            },
         }
     }
 }
@@ -902,6 +907,9 @@ enum BuildRecipient<AccountId> {
         receiving_account: AccountId,
         external_address: Option<ZcashAddress>,
     },
+    OpReturn {
+        data: Vec<u8>, // Store the actual data for history/tracking
+    },
 }
 
 impl<AccountId> BuildRecipient<AccountId> {
@@ -924,6 +932,9 @@ impl<AccountId> BuildRecipient<AccountId> {
                 external_address,
                 note: Box::new(note()),
             },
+            // NEW: Handle OP_RETURN conversion
+            // OP_RETURN outputs don't have associated notes, they're transparent metadata
+            BuildRecipient::OpReturn { data } => Recipient::OpReturn { data },
         }
     }
 
@@ -949,6 +960,8 @@ impl<AccountId> BuildRecipient<AccountId> {
                 outpoint,
             },
             BuildRecipient::InternalAccount { .. } => unreachable!(),
+            // NEW: Handle OP_RETURN conversion
+            BuildRecipient::OpReturn { data } => Recipient::OpReturn { data },
         }
     }
 }
@@ -1024,6 +1037,12 @@ where
                 }
                 other => other.map(|change| change.output_pool()),
             },
+            // OP_RETURN outputs cannot be spent - they are unspendable by design
+            // If someone tries to reference an OP_RETURN output as input, it's an error
+            StepOutputIndex::OpReturn(_) => {
+                return Err(ProposalError::ReferenceError(*input_ref).into());
+            }
+
         }
         .ok_or(ProposalError::ReferenceError(*input_ref))?;
 
@@ -1529,6 +1548,38 @@ where
         }
     }
 
+    // Extract the first OP_RETURN data from payments
+    let op_return_data = proposal_step
+        .transaction_request()
+        .payments()
+        .values()
+        .find_map(|payment| {
+            payment.other_params()
+                .iter()
+                .find(|(key, _)| key == "op_return")
+                .map(|(_, hex_value)| hex_value.clone())
+        });
+
+    // Add OP_RETURN output if data is present
+    if let Some(op_return_hex) = op_return_data {
+        // Decode hex string to bytes
+        let data = hex::decode(&op_return_hex)
+            .map_err(|_| Error::InvalidOpReturnData)?;
+
+        // Add zero-value OP_RETURN output with the decoded data
+        builder.add_transparent_null_data_output(&data)?;
+
+        // Add to metadata for database tracking and transaction history
+        transparent_output_meta.push((
+            BuildRecipient::OpReturn {
+                data: data.clone(),
+            },
+            TransparentAddress::PublicKeyHash([0u8; 20]), // Dummy address, not used for OP_RETURN
+            Zatoshis::ZERO,
+            StepOutputIndex::OpReturn(0), // Or create new variant StepOutputIndex::OpReturn
+        ));
+    }
+
     Ok(BuildState {
         #[cfg(feature = "transparent-inputs")]
         step_index,
@@ -1712,11 +1763,16 @@ where
                 outpoint.clone(),
             );
 
+            // Only insert non-OP_RETURN outputs into unused_transparent_outputs
+            // OP_RETURN outputs are unspendable and should not be tracked as UTXOs
             #[cfg(feature = "transparent-inputs")]
-            unused_transparent_outputs.insert(
-                StepOutput::new(build_state.step_index, step_output_index),
-                (address, outpoint),
-            );
+            if !matches!(recipient, Recipient::OpReturn { .. }) {
+                unused_transparent_outputs.insert(
+                    StepOutput::new(build_state.step_index, step_output_index),
+                    (address, outpoint),
+                );
+            }
+
             SentTransactionOutput::from_parts(n, recipient, value, None)
         });
 

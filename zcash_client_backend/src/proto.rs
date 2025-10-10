@@ -634,6 +634,11 @@ impl proposal::Proposal {
                                     },
                                 )),
                             },
+                            // OP_RETURN outputs are unspendable and should never appear as inputs
+                            // This case should be prevented by earlier validation, but we handle it defensively
+                            StepOutputIndex::OpReturn(_) => {
+                                panic!("OP_RETURN outputs cannot be used as inputs - this should have been caught during proposal validation");
+                            }
                         }
                     }))
                     .collect();

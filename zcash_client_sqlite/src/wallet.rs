@@ -2972,6 +2972,13 @@ pub(crate) fn store_transaction_to_be_sent<P: consensus::Parameters>(
                     .expect("can extract a recipient address from an ephemeral address script"),
                     true,
                 )?;
+            },
+            // NEW: Handle OP_RETURN outputs
+            // OP_RETURN outputs are metadata only and don't need to be stored as UTXOs
+            // They're already part of the transaction data stored by put_tx_data()
+            Recipient::OpReturn { .. } => {
+                // Nothing to do - OP_RETURN is unspendable metadata
+                // It's already included in the raw transaction stored in the database
             }
         }
     }
@@ -4353,7 +4360,16 @@ fn recipient_params<P: consensus::Parameters>(
                 Some(to_account),
                 PoolType::Shielded(note.protocol()),
             ))
-        }
+        },
+        // NEW: Handle OP_RETURN outputs
+        // OP_RETURN is metadata, not a payment to a recipient
+        // Store hex-encoded data as "address" for tracking purposes
+        Recipient::OpReturn { data } => Ok((
+            from_account_id,
+            Some(format!("op_return:{}", hex::encode(data))), // Prefix to distinguish from real addresses
+            None, // No receiving account
+            PoolType::TRANSPARENT, // Technically transparent output
+        )),
     }
 }
 

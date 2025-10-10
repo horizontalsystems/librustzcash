@@ -57,6 +57,8 @@ impl SentNoteTable {
             #[cfg(feature = "transparent-inputs")]
             Recipient::EphemeralTransparent { .. } => PoolType::Transparent,
             Recipient::InternalAccount { note, .. } => PoolType::Shielded(note.protocol()),
+            // OP_RETURN outputs don't have a pool type and shouldn't be tracked as spendable notes
+            Recipient::OpReturn { .. } => return, // Early return - don't store OP_RETURN in sent notes table
         };
         match pool_type {
             PoolType::Transparent => {
@@ -106,6 +108,8 @@ impl SentNoteTable {
             #[cfg(feature = "transparent-inputs")]
             Recipient::EphemeralTransparent { .. } => PoolType::Transparent,
             Recipient::InternalAccount { note, .. } => PoolType::Shielded(note.protocol()),
+            // OP_RETURN outputs don't have a pool type and shouldn't be tracked as spendable notes
+            Recipient::OpReturn { .. } => return, // Early return - don't store OP_RETURN
         };
         match pool_type {
             PoolType::Transparent => {
@@ -315,6 +319,12 @@ mod serialization {
                     outpoint: None,
                     note: Some(note.deref().clone().into()),
                 },
+                // OP_RETURN should never be serialized as a Recipient
+                // It's transaction metadata, not a payment recipient
+                // This case should be filtered out before serialization
+                Recipient::OpReturn { .. } => {
+                    panic!("OP_RETURN outputs should not be serialized as Recipients");
+                }
             }
         }
     }

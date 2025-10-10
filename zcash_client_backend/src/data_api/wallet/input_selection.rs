@@ -6,7 +6,8 @@ use std::{
     error,
     fmt::{self, Debug, Display},
 };
-
+use tracing::info;
+use zcash_script::script::Evaluable;
 use ::transparent::bundle::TxOut;
 use zcash_address::{ConversionError, ZcashAddress};
 use zcash_keys::address::{Address, UnifiedAddress};
@@ -46,7 +47,7 @@ use {
     std::convert::Infallible,
     zip321::Payment,
 };
-
+use transparent::address::OpReturnScript;
 #[cfg(feature = "orchard")]
 use crate::fees::orchard as orchard_fees;
 
@@ -420,6 +421,25 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
                 Address::Transparent(addr) => {
                     payment_pools.insert(*idx, PoolType::TRANSPARENT);
                     transparent_outputs.push(TxOut::new(payment.amount(), addr.script().into()));
+
+                    // Add OP_RETURN if exists
+                    if let Some((_, op_return_hex)) = payment.other_params().iter()
+                        .find(|(key, _)| key == "op_return")
+                    {
+                        info!("Found op_return in payment.other_params(), hex: {}", op_return_hex);
+                        hex::decode(op_return_hex)
+                            .ok()
+                            .and_then(OpReturnScript::new)
+                            .map(|op_return| {
+                                info!("Created OpReturnScript successfully, adding to transparent_outputs");
+                                let script = op_return.script();
+                                transparent_outputs.push(TxOut::new(Zatoshis::ZERO, script.clone().into()));
+                                info!("Added OP_RETURN output, total transparent outputs: {}, script hex: {}",
+                                    transparent_outputs.len(),
+                                    hex::encode(&script.to_bytes())
+                                );
+                            });
+                    }
                 }
                 #[cfg(feature = "transparent-inputs")]
                 Address::Tex(data) => {
@@ -619,6 +639,10 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
 
             match tr0_balance {
                 Ok(tr0_balance) => {
+                    info!("Transaction balance computed successfully");
+                    info!("Fee required: {} zatoshis", tr0_balance.fee_required().into_u64());
+                    info!("Total transaction amount: {} zatoshis", tr0_balance.total().into_u64());
+
                     // At this point, we have enough input value to pay for everything, so we
                     // return here.
                     let shielded_inputs =

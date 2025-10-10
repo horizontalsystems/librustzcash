@@ -6454,6 +6454,7 @@ dependencies = [
  "bytes",
  "ciborium",
  "group",
+ "hex",
  "incrementalmerkletree",
  "jubjub",
  "nonempty",

@@ -85,6 +85,10 @@ pub enum Recipient<AccountId> {
         external_address: Option<ZcashAddress>,
         note: Box<Note>,
     },
+    // NEW: OP_RETURN output variant
+    OpReturn {
+        data: Vec<u8>, // The OP_RETURN data payload
+    },
 }
 
 /// The shielded subset of a [`Transaction`]'s data that is relevant to a particular wallet.

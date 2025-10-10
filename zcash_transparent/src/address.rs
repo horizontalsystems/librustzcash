@@ -1,5 +1,6 @@
 //! Support for legacy transparent addresses and scripts.
 
+use alloc::vec::Vec;
 use core::fmt;
 use core2::io::{self, Read, Write};
 
@@ -111,6 +112,37 @@ impl From<script::Sig> for Script {
 impl From<&script::Sig> for Script {
     fn from(value: &script::Sig) -> Self {
         Self(script::Code(value.to_bytes()))
+    }
+}
+
+/// An OP_RETURN script for embedding data in transactions.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OpReturnScript {
+    data: Vec<u8>,
+}
+
+impl OpReturnScript {
+    /// Creates a new OP_RETURN script with the given data.
+    ///
+    /// Returns `None` if data length exceeds 80 bytes (standard limit).
+    pub fn new(data: Vec<u8>) -> Option<Self> {
+        if data.len() > 80 {
+            return None;
+        }
+        Some(OpReturnScript { data })
+    }
+
+    /// Generate the `scriptPubKey` corresponding to this OP_RETURN script.
+    pub fn script(&self) -> script::PubKey {
+        let mut script_ops = vec![op::RETURN];
+
+        if !self.data.is_empty() {
+            if let Some(push_op) = op::push_value(&self.data) {
+                script_ops.push(push_op);
+            }
+        }
+
+        script::Component(script_ops)
     }
 }
 

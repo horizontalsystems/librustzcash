@@ -215,6 +215,11 @@ impl<FeeRuleT, NoteRef> Proposal<FeeRuleT, NoteRef> {
                             return Err(ProposalError::ReferenceError(*prior_ref));
                         }
                     }
+                    // OP_RETURN outputs cannot be spent - they are unspendable by design
+                    // Any attempt to reference an OP_RETURN output as input is invalid
+                    StepOutputIndex::OpReturn(_) => {
+                        return Err(ProposalError::ReferenceError(*prior_ref));
+                    }
                 }
                 // check that there are no double-spends
                 if !consumed_prior_inputs.insert(*prior_ref) {
@@ -334,6 +339,7 @@ impl<FeeRuleT: Debug, NoteRef> Debug for Proposal<FeeRuleT, NoteRef> {
 pub enum StepOutputIndex {
     Payment(usize),
     Change(usize),
+    OpReturn(usize),
 }
 
 /// A reference to the output of a step in a proposal.
@@ -454,6 +460,11 @@ impl<NoteRef> Step<NoteRef> {
                         .get(i)
                         .ok_or(ProposalError::ReferenceError(*s_ref))?
                         .value(),
+                    // OP_RETURN outputs cannot be spent - they are unspendable by design
+                    // Attempting to use an OP_RETURN output as input is an error
+                    StepOutputIndex::OpReturn(_) => {
+                        return Err(ProposalError::ReferenceError(*s_ref));
+                    }
                 })
             })
             .collect::<Result<Vec<_>, _>>()?

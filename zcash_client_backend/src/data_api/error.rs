@@ -108,6 +108,9 @@ pub enum Error<DataSourceError, CommitmentTreeError, SelectionError, FeeError, C
     /// An error occurred while working with PCZTs.
     #[cfg(feature = "pczt")]
     Pczt(PcztError),
+
+    /// Op_return data in transparent transaciton must be in hex format.
+    InvalidOpReturnData
 }
 
 /// Errors that can occur while working with PCZTs.
@@ -232,6 +235,7 @@ where
             }
             #[cfg(feature = "pczt")]
             Error::Pczt(e) => write!(f, "PCZT error: {e}"),
+            Error::InvalidOpReturnData => write!(f, "Op_return data can't be recognized. Invalid hex-Format")
         }
     }
 }
