@@ -252,9 +252,8 @@ impl TransactionRequest {
         Ok(request)
     }
 
-    pub fn with_op_return(mut self, data: Vec<u8>) -> Self {
+    pub fn with_op_return(&mut self, data: Vec<u8>) {
         self.op_return_data = Some(data);
-        self
     }
 
     pub fn op_return_data(&self) -> Option<&Vec<u8>> {
