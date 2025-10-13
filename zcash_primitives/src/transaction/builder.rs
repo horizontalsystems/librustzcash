@@ -706,7 +706,26 @@ impl<P: consensus::Parameters, U: sapling::builder::ProverProgress> Builder<'_, 
         output_prover: &OP,
         fee_rule: &FR,
     ) -> Result<BuildResult, Error<FR::Error>> {
+        eprintln!("🔍 === BUILDER.BUILD START ===");
+        eprintln!("🔍 Transparent outputs in builder BEFORE get_fee: {}",
+                  self.transparent_builder.outputs().len());
+
+        for (i, output) in self.transparent_builder.outputs().iter().enumerate() {
+            eprintln!("🔍   Output {}: value={:?}, script_size={}",
+                      i, output.value(), output.script_pubkey().serialized_size());
+        }
+
         let fee = self.get_fee(fee_rule).map_err(Error::Fee)?;
+        eprintln!("🔍 Calculated fee: {:?}", fee);
+
+        eprintln!("🔍 Transparent outputs in builder AFTER get_fee: {}",
+                  self.transparent_builder.outputs().len());
+
+        for (i, output) in self.transparent_builder.outputs().iter().enumerate() {
+            eprintln!("🔍   Output {}: value={:?}, script_size={}",
+                      i, output.value(), output.script_pubkey().serialized_size());
+        }
+
         self.build_internal(
             transparent_signing_set,
             sapling_extsks,
