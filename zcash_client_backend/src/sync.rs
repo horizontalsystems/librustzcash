@@ -113,7 +113,7 @@ where
         let start_height = db_data
             .utxo_query_height(account_id)
             .map_err(Error::Wallet)?;
-        info!(
+        eprintln!(
             "Refreshing UTXOs for {:?} from height {}",
             account_id, start_height,
         );

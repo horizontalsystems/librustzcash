@@ -559,3 +559,61 @@ where
     let query_height = st.wallet().utxo_query_height(account_uuid).unwrap();
     assert_eq!(query_height, h0);
 }
+
+/// Test sending a transaction with OP_RETURN data
+pub fn send_with_op_return<DSF>(ds_factory: DSF, cache: impl TestCache)
+where
+    DSF: DataStoreFactory,
+    <DSF as DataStoreFactory>::AccountId: std::fmt::Debug,
+{
+    let mut st = TestBuilder::new()
+        .with_data_store_factory(ds_factory)
+        .with_block_cache(cache)
+        .with_account_from_sapling_activation(BlockHash([0; 32]))
+        .build();
+
+    let test_account = st.test_account().cloned().unwrap();
+    let account_uuid = test_account.account().id();
+    let ufvk = test_account.account().ufvk().unwrap().clone();
+
+    // Add some funds to the wallet
+    let (h0, _, _) = st.generate_next_block(
+        &ufvk.sapling().unwrap(),
+        AddressType::DefaultExternal,
+        Zatoshis::const_from_u64(1000000),
+    );
+    st.scan_cached_blocks(h0, 1);
+
+    eprintln!("🔍 === TEST: Initial balance added ===");
+
+    // Get a destination address
+    let uaddr = st
+        .wallet()
+        .get_last_generated_address_matching(account_uuid, UnifiedAddressRequest::AllAvailableKeys)
+        .unwrap()
+        .unwrap();
+    let to = Address::from(*uaddr.transparent().unwrap()).to_zcash_address(st.network());
+
+    eprintln!("🔍 === TEST: Creating transaction with OP_RETURN ===");
+
+    let op_return_data = b"Hello OP_RETURN".to_vec();
+
+    // Create a transaction with OP_RETURN
+    let txids = st
+        .create_standard_transaction_with_op_return(&test_account, to, Zatoshis::const_from_u64(50000), Some(op_return_data))
+        .unwrap();
+
+    eprintln!("🔍 === TEST: Transaction created, txid: {:?} ===", txids.head);
+
+    // Mine the transaction
+    let (h1, _) = st.generate_next_block_including(txids.head);
+    st.scan_cached_blocks(h1, 1);
+
+    eprintln!("🔍 === TEST: Transaction mined at height {:?} ===", h1);
+
+    // Verify the transaction exists
+    let tx = st.wallet().get_transaction(txids.head).unwrap().unwrap();
+    eprintln!("🔍 === TEST: Transaction found in wallet ===");
+
+    // TODO: Verify OP_RETURN data is in the transaction
+}

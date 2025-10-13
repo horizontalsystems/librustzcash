@@ -40,7 +40,7 @@ use {::transparent::builder::TransparentInputInfo, zcash_script::script};
 
 #[cfg(not(feature = "transparent-inputs"))]
 use core::convert::Infallible;
-
+use std::eprintln;
 #[cfg(zcash_unstable = "zfuture")]
 use crate::{
     extensions::transparent::{ExtensionTxBuilder, ToPayload},
@@ -762,6 +762,18 @@ impl<P: consensus::Parameters, U: sapling::builder::ProverProgress> Builder<'_, 
         output_prover: &OP,
         fee: Zatoshis,
     ) -> Result<BuildResult, Error<FE>> {
+        eprintln!("🔍 === BUILD INTERNAL START ===");
+        eprintln!("🔍 Fee: {:?}", fee);
+        eprintln!("🔍 Transparent outputs count: {}", self.transparent_builder.outputs().len());
+
+        for (i, output) in self.transparent_builder.outputs().iter().enumerate() {
+            eprintln!("🔍 Output {}: value={:?}, script_len={}",
+                      i,
+                      output.value(),
+                      output.script_pubkey().serialized_size()
+            );
+        }
+
         let consensus_branch_id = BranchId::for_height(&self.params, self.target_height);
 
         // determine transaction version
@@ -770,18 +782,25 @@ impl<P: consensus::Parameters, U: sapling::builder::ProverProgress> Builder<'_, 
         //
         // Consistency checks
         //
+        let balance_before_fee = self.value_balance()?;
+        eprintln!("🔍 Value balance BEFORE fee: {:?}", balance_before_fee);
 
         // After fees are accounted for, the value balance of the transaction must be zero.
         let balance_after_fees = (self.value_balance()? - fee).ok_or(BalanceError::Underflow)?;
+        eprintln!("🔍 Value balance AFTER fee: {:?}", balance_after_fees);
 
         match balance_after_fees.cmp(&ZatBalance::zero()) {
             Ordering::Less => {
+                eprintln!("❌ INSUFFICIENT FUNDS: need {:?} more", -balance_after_fees);
                 return Err(Error::InsufficientFunds(-balance_after_fees));
             }
             Ordering::Greater => {
+                eprintln!("❌ CHANGE REQUIRED: {:?} zatoshis left over", balance_after_fees);
                 return Err(Error::ChangeRequired(balance_after_fees));
             }
-            Ordering::Equal => (),
+            Ordering::Equal => {
+                eprintln!("✅ Balance is ZERO - perfect!");
+            },
         };
 
         let transparent_bundle = self.transparent_builder.build();

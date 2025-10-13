@@ -424,13 +424,13 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
 
                     // Add OP_RETURN if exists
                     if let Some(op_return_data) = transaction_request.op_return_data() {
-                        info!("Found op_return_data in transaction request, length: {} bytes", op_return_data.len());
+                        eprintln!("Found op_return_data in transaction request, length: {} bytes", op_return_data.len());
 
                         OpReturnScript::new(op_return_data.clone())
                             .map(|op_return| {
                                 let script = op_return.script();
                                 transparent_outputs.push(TxOut::new(Zatoshis::ZERO, script.clone().into()));
-                                info!("Added OP_RETURN output, script hex: {}", hex::encode(&script.to_bytes()));
+                                eprintln!("Added OP_RETURN output, script hex: {}", hex::encode(&script.to_bytes()));
                             });
                     }
                 }
@@ -632,9 +632,9 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
 
             match tr0_balance {
                 Ok(tr0_balance) => {
-                    info!("Transaction balance computed successfully");
-                    info!("Fee required: {} zatoshis", tr0_balance.fee_required().into_u64());
-                    info!("Total transaction amount: {} zatoshis", tr0_balance.total().into_u64());
+                    eprintln!("Transaction balance computed successfully");
+                    eprintln!("Fee required: {} zatoshis", tr0_balance.fee_required().into_u64());
+                    eprintln!("Total transaction amount: {} zatoshis", tr0_balance.total().into_u64());
 
                     // At this point, we have enough input value to pay for everything, so we
                     // return here.

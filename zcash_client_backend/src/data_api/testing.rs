@@ -908,6 +908,23 @@ where
             standard::MultiOutputChangeStrategy<DbT>,
         >,
     > {
+        self.create_standard_transaction_with_op_return(from_account, to, value, None)
+    }
+
+    pub fn create_standard_transaction_with_op_return(
+        &mut self,
+        from_account: &TestAccount<DbT::Account>,
+        to: ZcashAddress,
+        value: Zatoshis,
+        op_return_data: Option<Vec<u8>>,
+    ) -> Result<
+        NonEmpty<TxId>,
+        super::wallet::TransferErrT<
+            DbT,
+            GreedyInputSelector<DbT>,
+            standard::MultiOutputChangeStrategy<DbT>,
+        >,
+    > {
         let input_selector = GreedyInputSelector::new();
 
         #[cfg(not(feature = "orchard"))]
@@ -922,8 +939,13 @@ where
             DustOutputPolicy::default(),
         );
 
-        let request =
+        let mut request =
             zip321::TransactionRequest::new(vec![Payment::without_memo(to, value)]).unwrap();
+
+        // Add OP_RETURN data if provided
+        if let Some(data) = op_return_data {
+            request.with_op_return(data);
+        }
 
         self.spend(
             &input_selector,
@@ -1609,7 +1631,7 @@ impl<Cache, DsFactory> TestBuilder<Cache, DsFactory> {
     ///             prior_sapling_roots,
     ///             #[cfg(feature = "orchard")]
     ///             prior_orchard_roots,
-    ///         }
+    ///         prior_orchard_roots: vec![],}
     ///     });
     /// ```
     pub fn with_initial_chain_state(

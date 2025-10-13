@@ -1554,7 +1554,7 @@ where
         .transaction_request()
         .op_return_data()
     {
-        info!("Adding OP_RETURN output with {} bytes of data", op_return_data.len());
+        eprintln!("Adding OP_RETURN output with {} bytes of data", op_return_data.len());
 
         // Validate data size
         if op_return_data.len() > 80 {
@@ -1564,7 +1564,7 @@ where
         // Add zero-value OP_RETURN output
         builder.add_transparent_null_data_output(op_return_data)?;
 
-        info!("OP_RETURN output added successfully, hex: {}", hex::encode(op_return_data));
+        eprintln!("OP_RETURN output added successfully, hex: {}", hex::encode(op_return_data));
 
         // Add to metadata for database tracking (optional)
         transparent_output_meta.push((

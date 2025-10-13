@@ -139,6 +139,13 @@ where
                         #[cfg(feature = "transparent-inputs")]
                         None,
                     ),
+                    // Handle OP_RETURN outputs - they have no recipient address
+                    Recipient::OpReturn { .. } => OutputOfSentTx::from_parts(
+                        note.value, // should be Zatoshis::ZERO for OP_RETURN
+                        None,       // no recipient address for OP_RETURN
+                        #[cfg(feature = "transparent-inputs")]
+                        None,
+                    ),
                 })
             })
             .collect::<Result<_, Error>>()

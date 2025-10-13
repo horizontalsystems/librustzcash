@@ -1840,6 +1840,14 @@ mod tests {
     }
 
     #[test]
+    fn send_with_op_return() {
+        zcash_client_backend::data_api::testing::transparent::send_with_op_return(
+            TestDbFactory::default(),
+            BlockCache::new(),
+        );
+    }
+
+    #[test]
     fn ephemeral_address_management() {
         let mut st = TestBuilder::new()
             .with_data_store_factory(TestDbFactory::default())
