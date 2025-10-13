@@ -308,7 +308,7 @@ pub struct Builder<'a, P, U: sapling::builder::ProverProgress> {
         feature = "zip-233"
     ))]
     zip233_amount: Zatoshis,
-    transparent_builder: TransparentBuilder,
+    pub transparent_builder: TransparentBuilder,
     sapling_builder: Option<sapling::builder::Builder>,
     orchard_builder: Option<orchard::builder::Builder>,
     #[cfg(zcash_unstable = "zfuture")]

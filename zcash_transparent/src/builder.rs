@@ -211,7 +211,7 @@ impl TransparentInputInfo {
 pub struct TransparentBuilder {
     #[cfg(feature = "transparent-inputs")]
     inputs: Vec<TransparentInputInfo>,
-    vout: Vec<TxOut>,
+    pub vout: Vec<TxOut>,
 }
 
 #[derive(Debug, Clone)]

@@ -422,17 +422,17 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
                     payment_pools.insert(*idx, PoolType::TRANSPARENT);
                     transparent_outputs.push(TxOut::new(payment.amount(), addr.script().into()));
 
-                    // // Add OP_RETURN if exists
-                    // if let Some(op_return_data) = transaction_request.op_return_data() {
-                    //     eprintln!("Found op_return_data in transaction request, length: {} bytes", op_return_data.len());
-                    //
-                    //     OpReturnScript::new(op_return_data.clone())
-                    //         .map(|op_return| {
-                    //             let script = op_return.script();
-                    //             transparent_outputs.push(TxOut::new(Zatoshis::ZERO, script.clone().into()));
-                    //             eprintln!("Added OP_RETURN output, script hex: {}", hex::encode(&script.to_bytes()));
-                    //         });
-                    // }
+                    // Add OP_RETURN if exists
+                    if let Some(op_return_data) = transaction_request.op_return_data() {
+                        eprintln!("Found op_return_data in transaction request, length: {} bytes", op_return_data.len());
+
+                        OpReturnScript::new(op_return_data.clone())
+                            .map(|op_return| {
+                                let script = op_return.script();
+                                transparent_outputs.push(TxOut::new(Zatoshis::ZERO, script.clone().into()));
+                                eprintln!("Added OP_RETURN output, script hex: {}", hex::encode(&script.to_bytes()));
+                            });
+                    }
                 }
                 #[cfg(feature = "transparent-inputs")]
                 Address::Tex(data) => {

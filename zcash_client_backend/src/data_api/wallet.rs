@@ -40,7 +40,7 @@ use std::{
     num::NonZeroU32,
     ops::{Add, Sub},
 };
-
+use std::fmt::Debug;
 use shardtree::error::{QueryError, ShardTreeError};
 
 use super::InputSource;
@@ -1014,6 +1014,13 @@ where
     ParamsT: consensus::Parameters + Clone,
     FeeRuleT: FeeRule,
 {
+
+    eprintln!("========== build proposal!");
+    eprintln!("proposal_step: {:?}", proposal_step);
+
+    #[cfg(feature = "transparent-inputs")]
+    eprintln!("unused_transparent_outputs: {:?}", unused_transparent_outputs);
+
     #[cfg(feature = "transparent-inputs")]
     let step_index = prior_step_results.len();
 
@@ -1575,6 +1582,11 @@ where
             Zatoshis::ZERO,
             StepOutputIndex::OpReturn(0)), // Or just track index
         );
+
+        eprintln!("Current transparent outputs count: {}", builder.transparent_builder.vout.len());
+        for (i, tx_out) in builder.transparent_builder.vout.iter().enumerate() {
+            eprintln!("Output #{} script_pubkey hex: {:?}", i, tx_out.script_pubkey);
+        }
     }
 
     Ok(BuildState {
