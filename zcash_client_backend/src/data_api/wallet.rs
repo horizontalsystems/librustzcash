@@ -1676,6 +1676,8 @@ where
     let orchard_saks = &[spending_keys.usk.orchard().into()];
     #[cfg(not(feature = "orchard"))]
     let orchard_saks = &[];
+
+    eprintln!("CALL build_state.builder.build from 1680");
     let build_result = build_state.builder.build(
         &transparent_signing_set,
         sapling_extsks,

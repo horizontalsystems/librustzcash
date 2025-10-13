@@ -2112,6 +2112,7 @@ pub fn send_multi_step_proposed_transfer<T: ShieldedPoolTester, DSF>(
         Ok(_)
     );
     let test_prover = LocalTxProver::bundled();
+    eprintln!("CALL build_state.builder.build from 2115");
     let build_result = builder
         .build(
             &transparent_signing_set,

@@ -1095,6 +1095,7 @@ impl<'a, P: consensus::Parameters, U: sapling::builder::ProverProgress> Extensio
 
 #[cfg(any(test, feature = "test-dependencies"))]
 mod testing {
+    use std::eprintln;
     use rand::RngCore;
     use rand_core::CryptoRng;
 
@@ -1134,7 +1135,7 @@ mod testing {
                     self.0.try_fill_bytes(dest)
                 }
             }
-
+            eprintln!("CALL build_state.builder.build from 1138");
             self.build(
                 transparent_signing_set,
                 sapling_extsks,

@@ -407,6 +407,7 @@ mod tests {
             )
             .unwrap();
         let prover = LocalTxProver::bundled();
+        eprintln!("CALL build_state.builder.build from 410");
         let res = builder
             .build(
                 &transparent_signing_set,
