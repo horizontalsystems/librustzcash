@@ -40,6 +40,8 @@ message ProposalStep {
     // A flag indicating whether the step is for a shielding transaction,
     // used for determining which OVK to select for wallet-internal outputs.
     bool isShielding = 6;
+    // Optional OP_RETURN data to be included in the transaction (max 80 bytes)
+    bytes opReturnData = 7;
 }
 
 enum ValuePool {

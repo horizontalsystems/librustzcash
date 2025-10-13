@@ -45,6 +45,9 @@ pub struct ProposalStep {
     /// used for determining which OVK to select for wallet-internal outputs.
     #[prost(bool, tag = "6")]
     pub is_shielding: bool,
+    /// Optional OP_RETURN data to be included in the transaction (max 80 bytes)
+    #[prost(bytes = "vec", tag = "7")]
+    pub op_return_data: ::prost::alloc::vec::Vec<u8>,
 }
 /// A mapping from ZIP 321 payment index to the output pool that has been chosen
 /// for that payment, based upon the payment address and the selected inputs to

@@ -676,6 +676,10 @@ impl proposal::Proposal {
                     inputs,
                     balance,
                     is_shielding: step.is_shielding(),
+                    op_return_data: step.transaction_request()
+                        .op_return_data()
+                        .cloned()
+                        .unwrap_or_default(),
                 }
             })
             .collect();
@@ -712,8 +716,12 @@ impl proposal::Proposal {
 
                 let mut steps = Vec::with_capacity(self.steps.len());
                 for step in &self.steps {
-                    let transaction_request =
+                    let mut transaction_request =
                         TransactionRequest::from_uri(&step.transaction_request)?;
+
+                    if !step.op_return_data.is_empty() {
+                        transaction_request.with_op_return(step.op_return_data.clone());
+                    }
 
                     let payment_pools = step
                         .payment_output_pools
