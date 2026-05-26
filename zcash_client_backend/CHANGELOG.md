@@ -8,6 +8,16 @@ indicated by the `PLANNED` status in order to make it possible to correctly
 represent the transitive `semver` implications of changes within the enclosing
 workspace.
 
+## [Unreleased]
+
+### Added
+- `zcash_client_backend::data_api::wallet::propose_zip317_transfer_to_address_with_marginal_fee`,
+  which proposes a transfer using a ZIP 317 fee rule with an explicit marginal fee,
+  behind the `non-standard-fees` feature flag.
+- `zcash_client_backend::data_api::wallet::create_proposed_transactions_with_expiry_delta`,
+  for executing proposals with an explicit transaction expiry height delta.
+- `zcash_client_backend::data_api::wallet::{CreateWithExpiryDeltaError, CreateWithExpiryDeltaErrT}`
+
 ## [0.23.0] - 2026-06-02
 
 ### Changed

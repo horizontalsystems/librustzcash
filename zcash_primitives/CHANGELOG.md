@@ -10,6 +10,13 @@ workspace.
 
 ## [Unreleased]
 
+### Added
+- `zcash_primitives::transaction::builder::Builder::expiry_height` and
+  `Builder::set_expiry_height`, for inspecting and explicitly setting transaction
+  expiry height while preserving the coinbase expiry-height consensus invariant.
+- `zcash_primitives::transaction::builder::MAX_TX_EXPIRY_HEIGHT`
+- `zcash_primitives::transaction::builder::ExpiryHeightError`
+
 ## [0.28.0] - 2026-06-02
 
 ### Added
