@@ -476,6 +476,14 @@ pub(crate) fn sweep_crossing_value<P: Parameters + Clone>(
         }
     };
 
+    // The probe derives the *no-change* sweep fee: with `request == total` the selector prices
+    // the Orchard spends plus the single Ironwood output only. The sign-path proposal then
+    // requests `total - fee`, and the selector prices an Orchard change output for the remainder
+    // (+1 action => +1 marginal fee) before it can discover the change is zero -- so a crossing of
+    // exactly `total - fee` comes up one marginal fee short of its own proposal. Reserve that
+    // action up front; when the change then collapses to dust, DustOutputPolicy folds the
+    // difference back into the fee.
+    let fee = fee + u64::from(Zip317FeeRule::standard().marginal_fee());
     Ok(total.checked_sub(fee).filter(|crossing| *crossing > 0))
 }
 
